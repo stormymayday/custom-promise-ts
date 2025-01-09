@@ -1,112 +1,178 @@
 // import CustomPromise from "../src/custom-promise";
 const CustomPromise = Promise;
 
-describe("CustomPromise", () => {
-    it("should resolve a value", async () => {
-        const promise = new CustomPromise<string>((resolve) =>
-            resolve("test value")
+const DEFAULT_VALUE = "default";
+
+interface PromiseOptions {
+    value?: any;
+    fail?: boolean;
+}
+
+interface SettledPromiseResult {
+    status: "fulfilled" | "rejected";
+    value?: any;
+    reason?: any;
+}
+
+function promise({
+    value = DEFAULT_VALUE,
+    fail = false,
+}: PromiseOptions = {}): Promise<any> {
+    return new CustomPromise((resolve, reject) => {
+        fail ? reject(value) : resolve(value);
+    });
+}
+
+describe("then", () => {
+    it("with no chaining", () => {
+        return promise().then((v) => expect(v).toEqual(DEFAULT_VALUE));
+    });
+
+    it("with multiple thens for same promise", () => {
+        const checkFunc = (v: any) => expect(v).toEqual(DEFAULT_VALUE);
+        const mainPromise = promise();
+        const promise1 = mainPromise.then(checkFunc);
+        const promise2 = mainPromise.then(checkFunc);
+        return Promise.allSettled([promise1, promise2]);
+    });
+
+    it("with then and catch", () => {
+        const checkFunc = (v: any) => expect(v).toEqual(DEFAULT_VALUE);
+        const failFunc = (v: any) => expect(1).toEqual(2);
+        const resolvePromise = promise().then(checkFunc, failFunc);
+        const rejectPromise = promise({ fail: true }).then(failFunc, checkFunc);
+        return Promise.allSettled([resolvePromise, rejectPromise]);
+    });
+
+    it("with chaining", () => {
+        return promise({ value: 3 })
+            .then((v) => v * 4)
+            .then((v) => expect(v).toEqual(12));
+    });
+});
+
+describe("catch", () => {
+    it("with no chaining", () => {
+        return promise({ fail: true }).catch((v) =>
+            expect(v).toEqual(DEFAULT_VALUE)
         );
-        const value = await promise;
-        expect(value).toBe("test value");
     });
 
-    it("should reject with an error", async () => {
-        const promise = new CustomPromise<string>((_, reject) =>
-            reject("error value")
+    it("with multiple catches for same promise", () => {
+        const checkFunc = (v: any) => expect(v).toEqual(DEFAULT_VALUE);
+        const mainPromise = promise({ fail: true });
+        const promise1 = mainPromise.catch(checkFunc);
+        const promise2 = mainPromise.catch(checkFunc);
+        return Promise.allSettled([promise1, promise2]);
+    });
+
+    it("with chaining", () => {
+        return promise({ value: 3 })
+            .then((v) => {
+                throw v * 4;
+            })
+            .catch((v) => expect(v).toEqual(12));
+    });
+});
+
+describe("finally", () => {
+    it("with no chaining", () => {
+        const checkFunc = () => expect(undefined).toBeUndefined();
+        const successPromise = promise().finally(checkFunc);
+        const failPromise = promise({ fail: true }).finally(checkFunc);
+        return Promise.allSettled([successPromise, failPromise]);
+    });
+
+    it("with multiple finallys for same promise", () => {
+        const checkFunc = () => expect(undefined).toBeUndefined();
+        const mainPromise = promise();
+        const promise1 = mainPromise.finally(checkFunc);
+        const promise2 = mainPromise.finally(checkFunc);
+        return Promise.allSettled([promise1, promise2]);
+    });
+
+    it("with chaining", () => {
+        const checkFunc = () => expect(undefined).toBeUndefined();
+        const successPromise = promise()
+            .then((v) => v)
+            .finally(checkFunc);
+        const failPromise = promise({ fail: true })
+            .then((v) => v)
+            .finally(checkFunc);
+        return Promise.allSettled([successPromise, failPromise]);
+    });
+});
+
+describe("static methods", () => {
+    it("resolve", () => {
+        return CustomPromise.resolve(DEFAULT_VALUE).then((v) =>
+            expect(v).toEqual(DEFAULT_VALUE)
         );
-        try {
-            await promise;
-        } catch (error) {
-            expect(error).toBe("error value");
-        }
     });
 
-    it("should chain .then() calls", async () => {
-        const promise = new CustomPromise<number>((resolve) => resolve(5));
-        const value = await promise
-            .then((value) => value * 2)
-            .then((value) => value + 3);
-        expect(value).toBe(13);
-    });
-
-    it("should chain .then() and .catch()", async () => {
-        const promise = new CustomPromise<number>((_, reject) =>
-            reject("failure")
+    it("reject", () => {
+        return CustomPromise.reject(DEFAULT_VALUE).catch((v) =>
+            expect(v).toEqual(DEFAULT_VALUE)
         );
-        try {
-            await promise.then(() => {});
-        } catch (error) {
-            expect(error).toBe("failure");
-        }
     });
 
-    it("should handle .finally()", async () => {
-        const promise = new CustomPromise<string>((resolve) => resolve("done"));
-        const value = await promise.finally(() => {
-            // No value expected here in the final callback
+    describe("all", () => {
+        it("with success", () => {
+            return CustomPromise.all([
+                promise({ value: 1 }),
+                promise({ value: 2 }),
+            ]).then((v) => expect(v).toEqual([1, 2]));
         });
-        expect(value).toBe("done");
+
+        it("with fail", () => {
+            return CustomPromise.all([
+                promise(),
+                promise({ fail: true }),
+            ]).catch((v) => expect(v).toEqual(DEFAULT_VALUE));
+        });
     });
 
-    it("should reject correctly when using static reject()", async () => {
-        try {
-            await CustomPromise.reject("reject value");
-        } catch (error) {
-            expect(error).toBe("reject value");
-        }
-    });
-
-    it("should resolve correctly when using static resolve()", async () => {
-        const value = await CustomPromise.resolve("resolve value");
-        expect(value).toBe("resolve value");
-    });
-
-    it("should handle static all() method with multiple promises", async () => {
-        const promise1 = new CustomPromise<string>((resolve) => resolve("a"));
-        const promise2 = new CustomPromise<string>((resolve) => resolve("b"));
-        const values = await CustomPromise.all([promise1, promise2]);
-        expect(values).toEqual(["a", "b"]);
-    });
-
-    it("should handle static allSettled() method", async () => {
-        const promise1 = new CustomPromise<string>((resolve) =>
-            resolve("done")
+    it("allSettled", () => {
+        return CustomPromise.allSettled([
+            promise(),
+            promise({ fail: true }),
+        ]).then((v: SettledPromiseResult[]) =>
+            expect(v).toEqual([
+                { status: "fulfilled", value: DEFAULT_VALUE },
+                { status: "rejected", reason: DEFAULT_VALUE },
+            ])
         );
-        const promise2 = new CustomPromise<string>((_, reject) =>
-            reject("error")
-        );
-
-        const results = await CustomPromise.allSettled([promise1, promise2]);
-        expect(results).toEqual([
-            { status: "fulfilled", value: "done" },
-            { status: "rejected", reason: "error" },
-        ]);
     });
 
-    it("should handle static race() method", async () => {
-        const promise1 = new CustomPromise<string>((resolve) => resolve("a"));
-        const promise2 = new CustomPromise<string>((_, reject) =>
-            reject("error")
-        );
+    describe("race", () => {
+        it("with success", () => {
+            return CustomPromise.race([
+                promise({ value: 1 }),
+                promise({ value: 2 }),
+            ]).then((v) => expect(v).toEqual(1));
+        });
 
-        try {
-            const value = await CustomPromise.race([promise1, promise2]);
-            expect(value).toBe("a");
-        } catch (error) {
-            // This should not be triggered because promise1 resolves first
-            expect(error).not.toBeDefined();
-        }
+        it("with fail", () => {
+            return CustomPromise.race([
+                promise({ fail: true, value: 1 }),
+                promise({ fail: true, value: 2 }),
+            ]).catch((v) => expect(v).toEqual(1));
+        });
     });
 
-    it("should handle static any() method", async () => {
-        const promise1 = new CustomPromise<string>((_, reject) =>
-            reject("error1")
-        );
-        const promise2 = new CustomPromise<string>((resolve) =>
-            resolve("success")
-        );
+    describe("any", () => {
+        it("with success", () => {
+            return CustomPromise.any([
+                promise({ value: 1 }),
+                promise({ value: 2 }),
+            ]).then((v) => expect(v).toEqual(1));
+        });
 
-        const value = await CustomPromise.any([promise1, promise2]);
-        expect(value).toBe("success");
+        it("with fail", () => {
+            return CustomPromise.any([
+                promise({ fail: true, value: 1 }),
+                promise({ value: 2 }),
+            ]).catch((e: AggregateError) => expect(e.errors).toEqual([1, 2]));
+        });
     });
 });
