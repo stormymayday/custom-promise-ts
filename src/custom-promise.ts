@@ -6,9 +6,13 @@ enum PromiseState {
 
 class CustomPromise<T> {
     #state = PromiseState.PENDING;
-    #value: T | unknown;
+    #value: T | any;
+
     #thenCallbacks: ((value: T) => void)[] = [];
     #catchCallbacks: ((reason: any) => void)[] = [];
+
+    #onSuccessBind = this.#onSuccess.bind(this);
+    #onFailBind = this.#onFail.bind(this);
 
     constructor(
         callback: (
@@ -17,7 +21,7 @@ class CustomPromise<T> {
         ) => void
     ) {
         try {
-            callback(this.#onSuccess, this.#onFail);
+            callback(this.#onSuccessBind, this.#onFailBind);
         } catch (e) {
             this.#onFail(e);
         }
