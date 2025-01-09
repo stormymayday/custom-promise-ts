@@ -1,18 +1,15 @@
 class CustomPromise<T> {
-    // States
     static STATE = {
         PENDING: "pending",
         FULFILLED: "fulfilled",
         REJECTED: "rejected",
     };
 
-    // Private variables
     #state = CustomPromise.STATE.PENDING;
     #value: T | unknown;
     #thenCallbacks: ((value: T) => void)[] = [];
     #catchCallbacks: ((reason: any) => void)[] = [];
 
-    // Constructor accepts a callback with resolve and reject methods
     constructor(
         callback: (
             resolve: (value: T | CustomPromise<T>) => void,
@@ -20,15 +17,12 @@ class CustomPromise<T> {
         ) => void
     ) {
         try {
-            // Try to invoke the callback with resolve and reject methods
             callback(this.#onSuccess, this.#onFail);
         } catch (e) {
-            // If any error occurs, reject immediately
             this.#onFail(e);
         }
     }
 
-    // Execute the .then() and .catch() callbacks
     #runCallbacks() {
         if (this.#state === CustomPromise.STATE.FULFILLED) {
             this.#thenCallbacks.forEach((callback) => {
@@ -47,7 +41,6 @@ class CustomPromise<T> {
         }
     }
 
-    // Private method to handle successful resolution of the promise
     #onSuccess(value: T | CustomPromise<T>) {
         if (this.#state !== CustomPromise.STATE.PENDING) return;
 
@@ -57,7 +50,6 @@ class CustomPromise<T> {
         this.#runCallbacks();
     }
 
-    // Private method to handle failure/rejection of the promise
     #onFail(value: any) {
         if (this.#state !== CustomPromise.STATE.PENDING) return;
 
@@ -67,13 +59,21 @@ class CustomPromise<T> {
         this.#runCallbacks();
     }
 
-    then(callback: (value: T) => void) {
-        this.#thenCallbacks.push(callback);
+    then(thenCallback: (value: T) => void, catchCallback: (value: T) => void) {
+        if (thenCallback != null) {
+            this.#thenCallbacks.push(thenCallback);
+        }
+
+        if (catchCallback != null) {
+            this.#catchCallbacks.push(catchCallback);
+        }
 
         this.#runCallbacks();
+    }
+
+    catch(callback: (value: T) => void) {
+        this.then(undefined, callback);
     }
 }
 
 export default CustomPromise;
-
-const myPromise = new CustomPromise((resolve, reject) => {});
