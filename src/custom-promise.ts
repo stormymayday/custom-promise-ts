@@ -1,11 +1,11 @@
-class CustomPromise<T> {
-    static STATE = {
-        PENDING: "pending",
-        FULFILLED: "fulfilled",
-        REJECTED: "rejected",
-    };
+enum PromiseState {
+    FULFILLED = "fulfilled",
+    REJECTED = "rejected",
+    PENDING = "pending",
+}
 
-    #state = CustomPromise.STATE.PENDING;
+class CustomPromise<T> {
+    #state = PromiseState.PENDING;
     #value: T | unknown;
     #thenCallbacks: ((value: T) => void)[] = [];
     #catchCallbacks: ((reason: any) => void)[] = [];
@@ -24,7 +24,7 @@ class CustomPromise<T> {
     }
 
     #runCallbacks() {
-        if (this.#state === CustomPromise.STATE.FULFILLED) {
+        if (this.#state === PromiseState.FULFILLED) {
             this.#thenCallbacks.forEach((callback) => {
                 callback(this.#value as T);
             });
@@ -32,7 +32,7 @@ class CustomPromise<T> {
             this.#thenCallbacks = [];
         }
 
-        if (this.#state === CustomPromise.STATE.REJECTED) {
+        if (this.#state === PromiseState.REJECTED) {
             this.#catchCallbacks.forEach((callback) => {
                 callback(this.#value);
             });
@@ -42,19 +42,19 @@ class CustomPromise<T> {
     }
 
     #onSuccess(value: T | CustomPromise<T>) {
-        if (this.#state !== CustomPromise.STATE.PENDING) return;
+        if (this.#state !== PromiseState.PENDING) return;
 
         this.#value = value;
-        this.#state = CustomPromise.STATE.FULFILLED;
+        this.#state = PromiseState.FULFILLED;
 
         this.#runCallbacks();
     }
 
     #onFail(value: any) {
-        if (this.#state !== CustomPromise.STATE.PENDING) return;
+        if (this.#state !== PromiseState.PENDING) return;
 
         this.#value = value;
-        this.#state = CustomPromise.STATE.REJECTED;
+        this.#state = PromiseState.REJECTED;
 
         this.#runCallbacks();
     }
