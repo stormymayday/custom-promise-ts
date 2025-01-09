@@ -59,7 +59,10 @@ class CustomPromise<T> {
         this.#runCallbacks();
     }
 
-    then(thenCallback: (value: T) => void, catchCallback: (value: T) => void) {
+    then(
+        thenCallback: (value: T) => void,
+        catchCallback: (reason: any) => void
+    ) {
         if (thenCallback != null) {
             this.#thenCallbacks.push(thenCallback);
         }
