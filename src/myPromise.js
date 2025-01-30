@@ -9,10 +9,12 @@ class MyPromise {
     #value;
     #handlers = [];
     #catches = [];
+    #onResolveBind = this.#resolve.bind(this);
+    #onRejectBind = this.#reject.bind(this);
 
     constructor(executor) {
         try {
-            executor(this.#resolve, this.#reject);
+            executor(this.#onResolveBind, this.#onRejectBind);
         } catch (error) {
             this.#reject(error);
         }
@@ -54,9 +56,9 @@ class MyPromise {
         this.#runCallbacks();
     }
 
-    then(thenCb, catchCb) {
-        if (thenCb !== null) {
-            this.#handlers.push(thenCb);
+    then(handler, catchCb) {
+        if (handler !== null) {
+            this.#handlers.push(handler);
         }
 
         if (catchCb !== null) {
@@ -66,7 +68,9 @@ class MyPromise {
         this.#runCallbacks();
     }
 
-    catch() {}
+    catch(catchCb) {
+        this.then(undefined, catchCb);
+    }
 }
 
 module.exports = MyPromise;
