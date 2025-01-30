@@ -8,28 +8,39 @@ class MyPromise {
     #state = STATE.PENDING;
     #value;
     #handlers = [];
+    #catches = [];
 
-    constructor(callback) {
+    constructor(executor) {
         try {
-            callback(this.#resolve, this.#reject);
+            executor(this.#resolve, this.#reject);
         } catch (error) {
             this.#reject(error);
         }
     }
 
     #resolve(value) {
+        if (this.#state !== STATE.PENDING) {
+            return;
+        }
+
         this.#value = value;
         this.#state = STATE.FULFILLED;
+
+        this.#handlers.forEach((h) => h(this.#value));
     }
 
-    #reject(value) {
-        this.#value = value;
+    #reject(error) {
+        if (this.#state !== STATE.PENDING) {
+            return;
+        }
+
+        this.#value = error;
         this.#state = STATE.REJECTED;
+
+        this.#catches.forEach((c) => c(this.#value));
     }
 
-    then(callback) {
-        this.#handlers.push(callback);
-    }
+    then(callback) {}
 }
 
 module.exports = MyPromise;
