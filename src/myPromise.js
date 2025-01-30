@@ -18,6 +18,16 @@ class MyPromise {
         }
     }
 
+    #runCallbacks() {
+        if (this.#state !== STATE.FULFILLED) {
+            this.#handlers.forEach((h) => h(this.#value));
+        }
+
+        if (this.#state !== STATE.REJECTED) {
+            this.#catches.forEach((c) => c(this.#value));
+        }
+    }
+
     #resolve(value) {
         if (this.#state !== STATE.PENDING) {
             return;
@@ -26,7 +36,7 @@ class MyPromise {
         this.#value = value;
         this.#state = STATE.FULFILLED;
 
-        this.#handlers.forEach((h) => h(this.#value));
+        this.#runCallbacks();
     }
 
     #reject(error) {
@@ -37,7 +47,7 @@ class MyPromise {
         this.#value = error;
         this.#state = STATE.REJECTED;
 
-        this.#catches.forEach((c) => c(this.#value));
+        this.#runCallbacks();
     }
 
     then(callback) {}
