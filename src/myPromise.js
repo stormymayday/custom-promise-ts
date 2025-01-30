@@ -54,11 +54,19 @@ class MyPromise {
         this.#runCallbacks();
     }
 
-    then(callback) {
-        this.#handlers.push(callback);
+    then(thenCb, catchCb) {
+        if (thenCb !== null) {
+            this.#handlers.push(thenCb);
+        }
+
+        if (catchCb !== null) {
+            this.#catches.push(catchCb);
+        }
 
         this.#runCallbacks();
     }
+
+    catch() {}
 }
 
 module.exports = MyPromise;
