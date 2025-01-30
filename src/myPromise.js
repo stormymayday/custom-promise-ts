@@ -21,10 +21,14 @@ class MyPromise {
     #runCallbacks() {
         if (this.#state !== STATE.FULFILLED) {
             this.#handlers.forEach((h) => h(this.#value));
+
+            this.#handlers = [];
         }
 
         if (this.#state !== STATE.REJECTED) {
             this.#catches.forEach((c) => c(this.#value));
+
+            this.#catches = [];
         }
     }
 
@@ -50,7 +54,11 @@ class MyPromise {
         this.#runCallbacks();
     }
 
-    then(callback) {}
+    then(callback) {
+        this.#handlers.push(callback);
+
+        this.#runCallbacks();
+    }
 }
 
 module.exports = MyPromise;
