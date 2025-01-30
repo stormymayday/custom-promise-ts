@@ -4,8 +4,11 @@
     "main": "index.js",
     "scripts": {
         "build": "tsc",
-        "test": "jest --watchAll",
-        "start": "node dist/custom-promise.js"
+        "test:ts": "jest --config jest.config.js --testPathIgnorePatterns '__tests__/*.test.js'",
+        "test:js": "jest --config jest.config.js --testPathIgnorePatterns '__tests__/*.test.ts'",
+        "test": "npm run test:ts && npm run test:js",
+        "start:ts": "node dist/custom-promise.js",
+        "start:js": "node src/custom-promise.js"
     },
     "keywords": [],
     "author": "",
